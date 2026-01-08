@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameCloud | OS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #050505; --sidebar: #0f0f0f; --card-bg: #111111; --border: #1f1f1f;
+            --accent: #ffffff; --dim: #666; --text: #ffffff;
+        }
+        body.theme-graphite { --bg: #1a1c1e; --sidebar: #131416; --card-bg: #25282c; --border: #333; --text: #eee; }
+        body.theme-snow { --bg: #f5f5f7; --sidebar: #ffffff; --card-bg: #ffffff; --border: #e0e0e0; --text: #000; --accent: #000; --dim: #888; }
+
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; transition: 0.3s ease; overflow: hidden; }
+
+        /* --- Sidebar --- */
+        nav { width: 240px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 30px 20px; flex-shrink: 0; }
+        .brand { font-size: 1.5rem; font-weight: 800; margin-bottom: 40px; letter-spacing: -1px; }
+        .nav-group { margin-bottom: 30px; }
+        .nav-label { font-size: 0.7rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
+        .nav-item { padding: 12px 15px; border-radius: 8px; color: var(--dim); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px; margin-bottom: 5px; }
+        .nav-item:hover, .nav-item.active { background: var(--card-bg); color: var(--text); }
+        .nav-item.active { border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; }
+
+        /* --- Main Content --- */
+        main { flex-grow: 1; overflow-y: auto; padding: 40px; position: relative; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .search-input { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 15px; border-radius: 8px; color: var(--text); outline: none; width: 250px; }
+
+        .hero {
+            background: linear-gradient(45deg, var(--sidebar), var(--card-bg));
+            border: 1px solid var(--border); border-radius: 20px; padding: 40px; margin-bottom: 40px;
+            display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+        }
+
+        /* --- Grid & Cards --- */
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; }
+        .game-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; cursor: pointer; text-align: center; }
+        .game-card:hover { transform: translateY(-5px); border-color: var(--dim); background: var(--sidebar); }
+        
+        .icon-wrapper { width: 70px; height: 70px; border-radius: 16px; background: #1a1a1a; margin-bottom: 12px; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+        .game-icon-sq { width: 100%; height: 100%; object-fit: cover; }
+
+        .game-card strong { font-size: 0.85rem; display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-actions { margin-top: 10px; display: flex; gap: 15px; font-size: 0.8rem; color: var(--dim); }
+
+        .market-btn { background: #fff; color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; margin-top: 10px; width: 100%; cursor: pointer; transition: 0.2s; }
+        .market-btn:disabled { background: var(--border); color: var(--dim); cursor: default; }
+
+        /* Modals */
+        #settings-overlay, #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(10px); }
+        .modal-card { background: var(--bg); border: 1px solid var(--border); width: 400px; padding: 30px; border-radius: 24px; }
+        input { width: 100%; margin-bottom: 12px; padding: 12px; background: var(--sidebar); border: 1px solid var(--border); color: var(--text); border-radius: 8px; box-sizing: border-box; }
+        
+        /* Player */
+        #player-view { position: fixed; inset: 0; background: #000; display: none; z-index: 4000; }
+        .exit-btn { position: absolute; top: 20px; left: 20px; background: #fff; color: #000; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; z-index: 4001; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        .cat-title { grid-column: 1/-1; font-size: 1rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    </style>
+</head>
+<body class="theme-oled">
+
+    <nav>
+        <div class="brand">GameCloud.</div>
+        <div class="nav-group">
+            <span class="nav-label">Library</span>
+            <div class="nav-item active" onclick="switchTab('home', this)"><i class="fa-solid fa-user"></i> Me</div>
+            <div class="nav-item" onclick="switchTab('favs', this)"><i class="fa-solid fa-heart"></i> Favorites</div>
+            <div class="nav-item" onclick="switchTab('market', this)"><i class="fa-solid fa-shop"></i> Market</div>
+        </div>
+        <div class="nav-group">
+            <span class="nav-label">Manage</span>
+            <div class="nav-item" onclick="toggleSettings()"><i class="fa-solid fa-gear"></i> Settings</div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="top-bar">
+            <h2 id="view-title">Me</h2>
+            <input type="text" class="search-input" id="searchBox" placeholder="Search..." oninput="render()">
+        </div>
+        
+        <div class="hero" id="main-hero">
+            <div class="hero-text">
+                <h1>Ready to play?</h1>
+                <p>Your minimalist game collection, simplified into icons.</p>
+                <button style="background:#fff; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold" onclick="openModal()">+ Add New</button>
+            </div>
+        </div>
+
+        <div id="game-grid" class="game-grid"></div>
+    </main>
+
+    <div id="settings-overlay" onclick="if(event.target == this) toggleSettings()">
+        <div class="modal-card">
+            <h2>Settings</h2>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button onclick="setTheme('oled')" style="background:#000; color:white; border:1px solid #444; padding:10px; border-radius:8px; cursor:pointer">OLED</button>
+                <button onclick="setTheme('graphite')" style="background:#25282c; color:white; border:1px solid #444; padding:10px; border-radius:8px; cursor:pointer">Graphite</button>
+                <button onclick="setTheme('snow')" style="background:#fff; color:black; border:1px solid #ccc; padding:10px; border-radius:8px; cursor:pointer">Snow</button>
+            </div>
+            <button onclick="wipeData()" style="width:100%; background:#ff4757; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold">Wipe Data</button>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div class="modal-card">
+            <h3>Import Game</h3>
+            <input type="text" id="mName" placeholder="Game Name">
+            <input type="text" id="mUrl" placeholder="Game URL">
+            <input type="text" id="mIcon" placeholder="Icon URL (Optional)">
+            <button onclick="saveGame()" style="width:100%; padding:12px; background:#fff; color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:10px">Add to Cloud</button>
+            <button onclick="document.getElementById('modal-overlay').style.display='none'" style="width:100%; background:none; border:none; color:var(--dim); margin-top:10px; cursor:pointer">Cancel</button>
+        </div>
+    </div>
+
+    <div id="player-view">
+        <div class="exit-btn" onclick="closePlayer()">← Exit</div>
+        <iframe id="game-frame"></iframe>
+    </div>
+
+    <script>
+        let games = JSON.parse(localStorage.getItem('gc_v9_data')) || [];
+        let currentTab = 'home';
+
+        const marketData = {
+            "Action & Shooter": [
+                { name: "Krunker.io", url: "https://krunker.io/", faIcon: "fa-crosshairs", color: "#f1c40f" },
+                { name: "Venge.io", url: "https://venge.io/", faIcon: "fa-gun", color: "#e74c3c" },
+                { name: "Shell Shockers", url: "https://shellshock.io/", faIcon: "fa-egg", color: "#3498db" },
+                { name: "Ev.io", url: "https://ev.io/", faIcon: "fa-robot", color: "#9b59b6" },
+                { name: "ZombsRoyale.io", url: "https://zombsroyale.io/", faIcon: "fa-parachute-box", color: "#2ecc71" },
+                { name: "1v1.LOL", url: "https://1v1.lol/", faIcon: "fa-cube", color: "#34495e" },
+                { name: "Slope", url: "https://slopegame.io/", faIcon: "fa-mountain", color: "#2ed573" },
+                { name: "Vex 7", url: "https://game31.io/vex-7/", faIcon: "fa-person-running", color: "#ff4757" }
+            ],
+            "Multiplayer IO": [
+                { name: "Agar.io", url: "https://agar.io/", faIcon: "fa-circle-dot", color: "#ff6b81" },
+                { name: "Slither.io", url: "https://slither.io/", faIcon: "fa-worm", color: "#7bed9f" },
+                { name: "Diep.io", url: "https://diep.io/", faIcon: "fa-bullseye", color: "#5352ed" },
+                { name: "Paper.io 2", url: "https://paper-io.com/", faIcon: "fa-layer-group", color: "#1e90ff" },
+                { name: "Hole.io", url: "https://hole-io.com/", faIcon: "fa-circle", color: "#2f3542" },
+                { name: "Gartic.io", url: "https://gartic.io/", faIcon: "fa-pencil", color: "#ffa502" },
+                { name: "Skribbl.io", url: "https://skribbl.io/", faIcon: "fa-pen-nib", color: "#eccc68" },
+                { name: "Wings.io", url: "http://wings.io/", faIcon: "fa-plane", color: "#70a1ff" }
+            ],
+            "Puzzle & Logic": [
+                { name: "2048", url: "https://play2048.co/", faIcon: "fa-arrow-up-9-1", color: "#70a1ff" },
+                { name: "Tetris", url: "https://tetris.com/play-tetris", faIcon: "fa-shapes", color: "#ff4757" },
+                { name: "Little Alchemy 2", url: "https://littlealchemy2.com/", faIcon: "fa-flask", color: "#a29bfe" },
+                { name: "Chess.com", url: "https://www.chess.com/play/online", faIcon: "fa-chess-knight", color: "#ffffff" },
+                { name: "Minesweeper", url: "https://minesweeper.online/", faIcon: "fa-bomb", color: "#ced4da" },
+                { name: "Sudoku", url: "https://sudoku.com/", faIcon: "fa-table-cells", color: "#1e90ff" },
+                { name: "Wordle", url: "https://www.nytimes.com/games/wordle/index.html", faIcon: "fa-font", color: "#2ecc71" }
+            ],
+            "Retro Classics": [
+                { name: "Pac-Man", url: "https://www.google.com/logos/2010/pacman10-i.html", faIcon: "fa-ghost", color: "#ffeead" },
+                { name: "Snake", url: "https://www.google.com/logos/2010/snake.html", faIcon: "fa-staff-snake", color: "#badc58" },
+                { name: "Solitaire", url: "https://www.google.com/logos/2011/solitaire.html", faIcon: "fa-diamond", color: "#ff7f50" },
+                { name: "Doodle Jump", url: "https://doodlejump.io/", faIcon: "fa-arrow-up", color: "#7bed9f" },
+                { name: "Flappy Bird", url: "https://flappybird.io/", faIcon: "fa-dove", color: "#ffbe76" }
+            ]
+        };
+
+        function render() {
+            const grid = document.getElementById('game-grid');
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const hero = document.getElementById('main-hero');
+            grid.innerHTML = '';
+            
+            if (currentTab === 'market') {
+                hero.style.display = 'none';
+                for (let category in marketData) {
+                    const filtered = marketData[category].filter(g => g.name.toLowerCase().includes(query));
+                    if (filtered.length > 0) {
+                        grid.innerHTML += `<div class="cat-title">${category}</div>`;
+                        filtered.forEach(game => {
+                            const isAdded = games.some(ug => ug.url === game.url);
+                            grid.innerHTML += `
+                                <div class="game-card">
+                                    <div class="icon-wrapper" style="background: linear-gradient(135deg, ${game.color}22, ${game.color}44); border-color: ${game.color}66">
+                                        <i class="fa-solid ${game.faIcon}" style="font-size: 2rem; color: ${game.color}"></i>
+                                    </div>
+                                    <strong>${game.name}</strong>
+                                    <button class="market-btn" onclick="install('${game.name}','${game.url}')" ${isAdded ? 'disabled' : ''}>
+                                        ${isAdded ? 'Added' : 'Install'}
+                                    </button>
+                                </div>`;
+                        });
+                    }
+                }
+            } else {
+                hero.style.display = 'flex';
+                let list = currentTab === 'home' ? games : games.filter(g => g.fav);
+                list.filter(g => g.name.toLowerCase().includes(query)).forEach((game, idx) => {
+                    const domain = new URL(game.url).hostname;
+                    const icon = game.icon || `https://icon.horse/icon/${domain}`;
+                    grid.innerHTML += `
+                        <div class="game-card">
+                            <div class="icon-wrapper">
+                                <img src="${icon}" class="game-icon-sq" onclick="play('${game.url}')" onerror="this.src='https://www.google.com/s2/favicons?sz=128&domain=${domain}'">
+                            </div>
+                            <strong onclick="play('${game.url}')">${game.name}</strong>
+                            <div class="card-actions">
+                                <i class="fa-solid fa-heart" style="color:${game.fav ? '#ff4757' : 'var(--dim)'}" onclick="toggleFav(${idx})"></i>
+                                <i class="fa-solid fa-trash" onclick="deleteGame(${idx})"></i>
+                            </div>
+                        </div>`;
+                });
+            }
+        }
+
+        function switchTab(tab, el) {
+            currentTab = tab;
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('view-title').innerText = tab === 'home' ? 'Me' : (tab === 'favs' ? 'Favorites' : 'Market');
+            render();
+        }
+
+        function install(name, url) {
+            if(!games.some(g => g.url === url)) {
+                games.push({ name, url, fav: false });
+                localStorage.setItem('gc_v9_data', JSON.stringify(games));
+                render();
+            }
+        }
+
+        function saveGame() {
+            const name = document.getElementById('mName').value;
+            const url = document.getElementById('mUrl').value;
+            const icon = document.getElementById('mIcon').value;
+            if(name && url) {
+                games.push({ name, url, icon, fav: false });
+                localStorage.setItem('gc_v9_data', JSON.stringify(games));
+                document.getElementById('modal-overlay').style.display = 'none';
+                render();
+            }
+        }
+
+        function toggleFav(idx) { games[idx].fav = !games[idx].fav; localStorage.setItem('gc_v9_data', JSON.stringify(games)); render(); }
+        function deleteGame(idx) { games.splice(idx, 1); localStorage.setItem('gc_v9_data', JSON.stringify(games)); render(); }
+        function play(url) { document.getElementById('game-frame').src = url; document.getElementById('player-view').style.display = 'block'; }
+        function closePlayer() { document.getElementById('game-frame').src = ''; document.getElementById('player-view').style.display = 'none'; }
+        function toggleSettings() { const s = document.getElementById('settings-overlay'); s.style.display = s.style.display === 'flex' ? 'none' : 'flex'; }
+        function openModal() { document.getElementById('modal-overlay').style.display='flex'; }
+        function setTheme(t) { document.body.className = 'theme-' + t; localStorage.setItem('gc_theme', t); }
+        function wipeData() { if(confirm('Wipe everything?')) { localStorage.clear(); location.reload(); } }
+
+        setTheme(localStorage.getItem('gc_theme') || 'oled');
+        render();
+    </script>
+</body>
+</html>
